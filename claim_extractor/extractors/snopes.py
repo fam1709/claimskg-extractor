@@ -7,8 +7,10 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from claim_extractor import Claim, Configuration
+from claim_extractor import tag
 from claim_extractor.extractors import FactCheckingSiteExtractor, caching
 
+t = tag
 
 class DummyTag(object):
     def __init__(self):
@@ -130,67 +132,67 @@ class SnopesFactCheckingSiteExtractor(FactCheckingSiteExtractor):
         
         # claim
         claim_text = None
-        if parsed_claim_review_page.select( 'article > div > div.claim-text.card-body' ):
-            for p in parsed_claim_review_page.select( 'article > div > div.claim-text.card-body' ):
+        if parsed_claim_review_page.select( 'div.claim-text.card-body' ):
+            for p in parsed_claim_review_page.select( 'div.claim-text.card-body'):
                 if hasattr(p, 'text' ):
                     claim_text = p.text.strip()
             claim.claim = str(claim_text).strip()
 
         # rating -> https://www.snopes.com/fact-check-ratings/
         rating = None
-        if parsed_claim_review_page.select( 'article > div > div > div > div.media-body > span' ):
-            for rating_span in parsed_claim_review_page.select( 'article > div > div > div > div.media-body > span' ):
+        if parsed_claim_review_page.select('div.media-body.d-flex.flex-column.align-self-center > span'):
+            for rating_span in parsed_claim_review_page.select( 'div.media-body.d-flex.flex-column.align-self-center > span' ):
                 rating = rating_span.text.strip()
                 if (rating != ""):
                     break
             claim.rating = str(rating).replace('"', "").strip()
         # claim.set_rating_value( rating )
 
-        # rating best
-        whats_true = None
-        if parsed_claim_review_page.select( 'article > div > div > div.whats-true > div > p' ):
-            for rating_span_true in parsed_claim_review_page.select( 'article > div > div > div.whats-true > div > p' ):
-                whats_true = rating_span_true.text.strip()
-            if whats_true:
-                whats_true = str(whats_true).replace('"', "")
-                # Text: (not Numerical value)
-                # claim.best_rating = whats_true
+        # # rating best
+        # whats_true = None
+        # if parsed_claim_review_page.select( 'article > div > div > div.whats-true > div > p' ):
+        #     for rating_span_true in parsed_claim_review_page.select( 'article > div > div > div.whats-true > div > p' ):
+        #         whats_true = rating_span_true.text.strip()
+        #     if whats_true:
+        #         whats_true = str(whats_true).replace('"', "")
+        #         # Text: (not Numerical value)
+        #         # claim.best_rating = whats_true
 
-        # rating worst
-        whats_true = False
-        if parsed_claim_review_page.select( 'article > div > div > div.whats-false > div > p'):
-            for rating_span_false in parsed_claim_review_page.select( 'article > div > div > div.whats-false > div > p' ):
-                whats_false = rating_span_false.text.strip()
-            if whats_false:
-                whats_false = str(whats_true).replace('"', "")
-                # Text: (not Numerical value)
-                # claim.worst_rating = whats_false
+        # # rating worst
+        # whats_true = False
+        # if parsed_claim_review_page.select( 'article > div > div > div.whats-false > div > p'):
+        #     for rating_span_false in parsed_claim_review_page.select( 'article > div > div > div.whats-false > div > p' ):
+        #         whats_false = rating_span_false.text.strip()
+        #     if whats_false:
+        #         whats_false = str(whats_true).replace('"', "")
+        #         # Text: (not Numerical value)
+        #         # claim.worst_rating = whats_false
             
-        # rating Undetermined?
-        whats_undetermined = False
-        if parsed_claim_review_page.select( 'article > div > div > div.whats-undetermined > div > p'):
-            for rating_span_undetermined in parsed_claim_review_page.select( 'article > div > div > div.whats-undetermined > div > p' ):
-                whats_undetermined = rating_span_undetermined.text.strip()
-            if whats_undetermined:
-                whats_undetermined = str(whats_undetermined).replace('"', "")
-                # Text: (not Numerical value)
-                # claim.whats_undetermined = whats_undetermined
+        # # rating Undetermined?
+        # whats_undetermined = False
+        # if parsed_claim_review_page.select( 'article > div > div > div.whats-undetermined > div > p'):
+        #     for rating_span_undetermined in parsed_claim_review_page.select( 'article > div > div > div.whats-undetermined > div > p' ):
+        #         whats_undetermined = rating_span_undetermined.text.strip()
+        #     if whats_undetermined:
+        #         whats_undetermined = str(whats_undetermined).replace('"', "")
+        #         # Text: (not Numerical value)
+        #         # claim.whats_undetermined = whats_undetermined
 
         # rating value ?
         # -
         
         # Body descriptioon
         text = ""
-        if parsed_claim_review_page.select( 'article > div.single-body.card.card-body.rich-text > p' ):
-            for child in parsed_claim_review_page.select( 'article > div.single-body.card.card-body.rich-text > p' ):
+        if parsed_claim_review_page.select( 'div.single-body.card-body.rich-text > p' ):
+            for child in parsed_claim_review_page.select( 'div.single-body.card-body.rich-text > p' ):
                 text += " " + child.text
             body_description = text.strip()
             claim.body = str(body_description).strip()
 
         # related links
         related_links = []
-        if parsed_claim_review_page.select( 'article > div.single-body.card.card-body > p > a' ):
-            for link in parsed_claim_review_page.select( 'article > div.single-body.card.card-body > p > a' ):
+        if parsed_claim_review_page.select( 'div.single-body.card-body > p > a' ):
+            for link in parsed_claim_review_page.select( 'div.single-body.card-body > p > a' ):
                 if hasattr( link, 'href' ):
                     try:
                         related_links.append( link['href'] )
@@ -217,5 +219,8 @@ class SnopesFactCheckingSiteExtractor(FactCheckingSiteExtractor):
             if not claim_text: 
                 print ( "-> Claim cannot be found!" )
             return []
+        
+        claimtagged = t.wat_entity_linking(claim.claim)
+        t.get_wat_annotations(claimtagged, claim)
         
         return [claim]
