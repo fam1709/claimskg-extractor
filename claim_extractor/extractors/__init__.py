@@ -13,6 +13,7 @@ from claim_extractor.extractors.caching import get_claim_from_cache, cache_claim
 
 MATCH_ALL = r'.*'
 
+url_dict = {}
 
 def like(string):
     """
@@ -54,7 +55,7 @@ class FactCheckingSiteExtractor(ABC):
         if headers is None:
             self.headers = {
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) '
-                              'Chrome/53.0.2785.143 Safari/537.36'}
+                              'Chrome/103.0.5060.134 Safari/537.36'}
         if ignore_urls is None:
             ignore_urls = list()
         self.ignore_urls = ignore_urls
@@ -73,7 +74,7 @@ class FactCheckingSiteExtractor(ABC):
             page = caching.get(listing_page_url, headers=self.headers, timeout=5)
             if not page:
                 continue
-            parsed_listing_page = BeautifulSoup(page, self.configuration.parser_engine)
+            parsed_listing_page = BeautifulSoup(page, "lxml")
             number_of_pages = self.find_page_count(parsed_listing_page)
             if number_of_pages and number_of_pages < 0:
                 number_of_pages = None
@@ -83,6 +84,10 @@ class FactCheckingSiteExtractor(ABC):
             print("Extracting claims listed in " + listing_page_url)
             for url in tqdm(urls):
                 try:
+                    if str(url) not in url_dict:
+                        url_dict[str(url)] = 'ok'
+                    else:
+                        continue
                     if "http" in url:
                         review_page = caching.get(url, headers=self.headers, timeout=6)
                         if review_page:
@@ -109,7 +114,7 @@ class FactCheckingSiteExtractor(ABC):
         return pandas.DataFrame(claims)
 
     def _annotate_claim(self, claim: Claim):
-        if self.language == "eng" or self.language == "fra":
+        if self.language == "eng" or self.language == "fra" or self.language == "pt":
             claim_text = claim.claim
             claim.claim_entities = self.annotator.annotate(claim_text, language=self.language)
 
